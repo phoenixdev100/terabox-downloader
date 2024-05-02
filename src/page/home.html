@@ -1,0 +1,134 @@
+<!-- Google Tag Manager -->
+<script>(function(w,d,s,l,i){w[l]=w[l]||[];w[l].push({'gtm.start':
+new Date().getTime(),event:'gtm.js'});var f=d.getElementsByTagName(s)[0],
+j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
+'https://www.googletagmanager.com/gtm.js?id='+i+dl;f.parentNode.insertBefore(j,f);
+})(window,document,'script','dataLayer','GTM-KKZQS3TQ');</script>
+<!-- End Google Tag Manager -->
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <meta charset="UTF-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <link
+            rel="stylesheet"
+            href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"
+            integrity="sha512-iecdLmaskl7CVkqkXNQ/ZH/XLlvWZOJyj7Yy7tcenmpD1ypASozpmT/E0iPtmFIB46ZmdtAc9eNBvH0H/ZpiBw=="
+            crossorigin="anonymous"
+            referrerpolicy="no-referrer"
+        />
+        <link rel="shortcut icon" href="./favicon.ico" type="image/x-icon">
+        <link rel="stylesheet" href="./style.css" />
+        <title>Get Link</title>
+    </head>
+    <body>
+        <div class="container">
+            <h1>Get Link Terabox</h1>
+            <h2>Support and Demo Group</h2>
+            <h3>@requestcenterr</h3>
+            <h4>use VPN if downloading is slow/now downloading</h4>
+            <div class="form-group">
+                <label for="input-url">Enter URL:</label>
+                <input type="text" id="input-url" placeholder="https://terabox.com/s/117NfiRSK_e4ImEEDqQGh_g" />
+                <input type="text" id="input-password" placeholder="Password (Option)" />
+            </div>
+            <div class="form-group">
+                <button id="get-link-button">Get Link</button>
+            </div>
+            <div class="output">
+                <div class="tree-view"></div>
+            </div>
+        </div>
+
+        <script
+            src="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/js/all.min.js"
+            integrity="sha512-fD9DI5bZwQxOi7MhYWnnNPlvXdp/2Pj3XSTRrFs5FQa4mizyGLnJcN6tuvUS6LbmgN1ut+XGSABKvjN0H6Aoow=="
+            crossorigin="anonymous"
+            referrerpolicy="no-referrer"
+        ></script>
+        <script src="./script.js"></script>
+        <script>
+            function fetchDownload({ shareid, uk, sign, timestamp, fs_id }) {
+                return fetch("/api/get-download", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ shareid, uk, sign, timestamp, fs_id }),
+                }).then(async function (res) {
+                    return await res.json()
+                })
+            }
+
+            function fetchInfo(shortUrl, pwd = ''){
+                return fetch(`/api/get-info?shorturl=${shortUrl}&pwd=${pwd}`).then(async function (res) {
+                        const body = await res.json()
+
+                        if (!body.ok) return alert(body.message)
+
+                        // handle Info
+                        function recursiveList(list) {
+                            return list.map((item) => ({
+                                isDir: item.is_dir != 0,
+                                name: item.filename,
+                                category: item.is_dir != 0 || parseInt(item.category),
+                                size: item.is_dir != 0 || formatStorageSize(parseInt(item.size)),
+                                children:
+                                    item.children && item.children.length > 0
+                                        ? recursiveList(item.children)
+                                        : undefined,
+                                downloadAction:
+                                    item.is_dir != 0 ||
+                                    async function () {
+                                        const res = await fetchDownload({
+                                            shareid: body.shareid,
+                                            uk: body.uk,
+                                            sign: body.sign,
+                                            timestamp: body.timestamp,
+                                            fs_id: item.fs_id,
+                                        })
+
+                                        if (!res.ok) return alert(res.message)
+
+                                        window.open(res.downloadLink, '_blank')
+                                    },
+                            }))
+                        }
+
+                        return recursiveList(body.list)
+                    })
+
+            }
+
+            const getLinkButton = document.getElementById("get-link-button")
+            const inputUrl = document.getElementById("input-url")
+            const inputPassword = document.getElementById("input-password")
+            const treeViewElement = document.querySelector(".tree-view")
+
+            getLinkButton.addEventListener("click", async function () {
+                const url = inputUrl.value
+                const pwd = inputPassword.value
+
+                if(!url) return alert('Url must not empty!!')
+
+                const regex = /\/([A-Za-z0-9_-]+)$/
+                const match = url.match(regex)
+                if (match) {
+                    const shortUrl = match[1]
+
+                    treeViewElement.innerHTML = '<p style="text-align:center;">Loading...</p>'
+                    
+                    const d = await fetchInfo(shortUrl, pwd)
+                    
+                    treeViewElement.innerHTML = ''
+                    
+                    TreeView(d, treeViewElement)
+                } else {
+                    alert("URL not support")
+                }
+            })
+        </script>
+        <!-- Google Tag Manager (noscript) -->
+<noscript><iframe src="https://www.googletagmanager.com/ns.html?id=GTM-KKZQS3TQ"
+height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
+<!-- End Google Tag Manager (noscript) -->
+    </body>
+</html>
